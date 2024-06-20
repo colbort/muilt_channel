@@ -20,7 +20,6 @@ type ReplacePackage struct {
 
 var once sync.Once
 var Cache *ReplacePackage
-var lock sync.Mutex
 
 func ReplacePackageData() *ReplacePackage {
 	once.Do(func() {

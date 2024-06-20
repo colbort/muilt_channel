@@ -3,8 +3,6 @@ package apktools
 import (
 	"errors"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -13,6 +11,9 @@ import (
 	"strings"
 	"test/common"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type KeyStoreInfo struct {
@@ -56,6 +57,9 @@ func Walle(input string, channel interface{}) (out string, err error) {
 	}
 
 	walle, err := filepath.Abs("config/library/walle-cli-all.jar")
+	if err != nil {
+		return "", err
+	}
 	args := make([]string, 0)
 	args = append(args, "-jar")
 	args = append(args, walle)
@@ -100,8 +104,14 @@ func Zipalign(input string) (out string, err error) {
 	sysType := runtime.GOOS
 
 	zipalign, err := filepath.Abs("config/library/zipalign")
+	if err != nil {
+		return "", err
+	}
 	if sysType == "darwin" {
 		zipalign, err = filepath.Abs("config/library/zipalign_mac")
+		if err != nil {
+			return "", err
+		}
 	}
 
 	args := make([]string, 0)
@@ -162,7 +172,9 @@ func SetPackageName(input string, newPackageName string) (signFile string, err e
 
 	var apktool string
 	apktool, err = filepath.Abs("config/library/apktool")
-
+	if err != nil {
+		return "", err
+	}
 	if common.PathExists(tempPath) {
 		cmd := exec.Command("rm", "-rf", tempPath)
 		cmd.CombinedOutput()
@@ -198,7 +210,9 @@ func SetPackageName(input string, newPackageName string) (signFile string, err e
 		return
 	}
 	err = common.ReplaceFileContents(compilePath+"/AndroidManifest.xml", old_package_name, newPackageName)
-
+	if err != nil {
+		return "", err
+	}
 	args = make([]string, 0)
 	args = append(args, "b")
 	args = append(args, "-o")
@@ -308,11 +322,14 @@ func StartSigning(inputPath string, keyStoreInfo KeyStoreInfo) (outPath string, 
 }
 
 func StartSigningVerify(inputPath string) (err error) {
-	apksigner, err := filepath.Abs("config/library/apksigner.jar")
-	args := make([]string, 0)
+	signer, err := filepath.Abs("config/library/apksigner.jar")
+	if err != nil {
+		return err
+	}
+	var args []string
 	args = make([]string, 0)
 	args = append(args, "-jar")
-	args = append(args, apksigner)
+	args = append(args, signer)
 	args = append(args, "verify")
 	args = append(args, "--verbose")
 	args = append(args, "--print-certs")
@@ -361,9 +378,6 @@ func CreateKeyStore() (keyStoreInfo KeyStoreInfo, err error) {
 		KeyStoreAliasPass: pass,
 	}
 
-	if err != nil {
-		return
-	}
 	args := make([]string, 0)
 	args = append(args, "-genkey")
 	args = append(args, "-v")
