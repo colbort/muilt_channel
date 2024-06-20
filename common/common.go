@@ -16,10 +16,7 @@ func PathExists(path string) bool {
 		return false
 	}
 	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 func FileFindAllS(fileName string, str string) (re string, err error) {
@@ -128,7 +125,7 @@ func GetBetweenStr(str, start, end string) string {
 	str = string([]byte(str)[:m])
 	return str
 }
-func Substr(str string, start, length int) string {
+func SubStr(str string, start, length int) string {
 	rs := []rune(str)
 	rl := len(rs)
 	end := 0

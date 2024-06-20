@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const METHODPOST = "POST"
-const METHODGET  = "GET"
+const METHODGET = "GET"
 
 type RequestConfig struct {
 	Url    string
@@ -29,8 +30,7 @@ type HttpRequest struct {
 	Code int
 }
 
-
-func maptoUrlParams(Data map[string]string) string {
+func mapToUrlParams(Data map[string]string) string {
 	var Params string
 	for key, value := range Data {
 		Params += key + "=" + url.QueryEscape(value) + "&"
@@ -43,9 +43,7 @@ func maptoUrlParams(Data map[string]string) string {
 	return Params
 }
 
-
-
-func MaptoUrlPostParams(Data map[string]string) string {
+func MapToUrlPostParams(Data map[string]string) string {
 	var Params string
 	for key, value := range Data {
 		Params += key + "=" + value + "&"
@@ -59,14 +57,12 @@ func MaptoUrlPostParams(Data map[string]string) string {
 }
 
 func urlAddParams(Url string, Params string) string {
-	if strings.Index(Params, "?") != -1 {
+	if !strings.Contains(Params, "?") {
 		return Url + "&" + Params
 	} else {
 		return Url + "?" + Params
 	}
 }
-
-
 
 func Send(config RequestConfig) (HttpRequest, error) {
 	Url := config.Url
@@ -88,7 +84,7 @@ func Send(config RequestConfig) (HttpRequest, error) {
 	var body []byte
 	if Method == METHODGET {
 		if len(Data) > 0 {
-			Url = urlAddParams(Url, maptoUrlParams(Data))
+			Url = urlAddParams(Url, mapToUrlParams(Data))
 		}
 		request, err = http.NewRequest(Method, Url, nil)
 		if err != nil {
@@ -96,21 +92,22 @@ func Send(config RequestConfig) (HttpRequest, error) {
 		}
 	}
 
-
-
 	if Method == METHODPOST {
 		var reader io.Reader
 		if len(Data) > 0 {
-			value, _ := Header["CONTENT-TYPE"]
+			value, ok := Header["CONTENT-TYPE"]
+			if !ok {
+				value = "application/json"
+			}
 			if strings.ToLower(value) == "application/json" {
-				var  bytesData []byte
+				var bytesData []byte
 				bytesData, err = json.Marshal(Data)
 				if err != nil {
 					return httpRequest, err
 				}
 				reader = bytes.NewReader(bytesData)
 			} else {
-				reader = strings.NewReader(MaptoUrlPostParams(Data))
+				reader = strings.NewReader(MapToUrlPostParams(Data))
 			}
 		}
 		request, err = http.NewRequest(Method, Url, reader)
@@ -126,7 +123,7 @@ func Send(config RequestConfig) (HttpRequest, error) {
 	}
 
 	client := &http.Client{
-		Timeout:time.Duration(30) * time.Second,
+		Timeout: time.Duration(30) * time.Second,
 	}
 	var resp *http.Response
 	resp, err = client.Do(request)
@@ -144,27 +141,23 @@ func Send(config RequestConfig) (HttpRequest, error) {
 	httpRequest.Body = string(body)
 
 	if resp.StatusCode != 200 && resp.StatusCode != 301 && resp.StatusCode != 302 {
-		logrus.Warn(fmt.Sprintf("地址请求失败\n请求地址:%s\n响应code:%d\n响应body:%s",Url,resp.StatusCode,httpRequest.Body))
-		return httpRequest,err
+		logrus.Warn(fmt.Sprintf("地址请求失败\n请求地址:%s\n响应code:%d\n响应body:%s", Url, resp.StatusCode, httpRequest.Body))
+		return httpRequest, err
 	}
 
 	defer resp.Body.Close()
 
-
 	httpRequest.Code = resp.StatusCode
 
-	return httpRequest,err
+	return httpRequest, err
 }
-
-
-
 
 type VersionData struct {
-	Version   string `json:"version"`
-	Versionpath    string `json:"versionpath"`
+	Version     string `json:"version"`
+	Versionpath string `json:"versionpath"`
 }
 
-func GetVersionData(url string) (res VersionData,err error) {
+func GetVersionData(url string) (res VersionData, err error) {
 	res = VersionData{}
 	header := make(map[string]string)
 	header["content-type"] = "application/x-www-form-urlencoded"
@@ -181,7 +174,7 @@ func GetVersionData(url string) (res VersionData,err error) {
 	}
 
 	if httpRequest.Code != 200 {
-		err = errors.New(fmt.Sprintf("err:   url->%s code->%d body->%s",url,httpRequest.Code,httpRequest.Body))
+		err = errors.New(fmt.Sprintf("err:   url->%s code->%d body->%s", url, httpRequest.Code, httpRequest.Body))
 		return
 	}
 
